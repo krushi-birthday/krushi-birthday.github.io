@@ -19,7 +19,7 @@ window.config = {
   // 1. NAME OF THE BIRTHDAY PERSON (Naam)
   // -------------------------------------------------------------------------
   // Example: name: "Sophia",
-  name: "gannu",
+  name: "guddu",
 
   // -------------------------------------------------------------------------
   // 2. BIRTHDAY DATE (Birthday ki tareekh)
