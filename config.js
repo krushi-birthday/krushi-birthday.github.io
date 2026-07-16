@@ -81,5 +81,10 @@ window.config = {
   // -------------------------------------------------------------------------
   // If they don't upload a "birthday.mp3" file inside the "/music" folder,
   // this sweet, soothing instrumental piano music will play as a backup!
-  fallbackMusicUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+  fallbackMusicUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+
+  // -------------------------------------------------------------------------
+  // 7. MOON WISH (Secret message shown when the moon icon is clicked)
+  // -------------------------------------------------------------------------
+  moonWish: "🌙 If the stars are my wishes, then you're my moon—the one they all revolve around. Your presence brings peace, your smile brings light, and your heart makes my world beautiful. Thank you for being the most special person in my life. Happy Birthday, my moon. 🌙💜"
 };
