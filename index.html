@@ -140,6 +140,77 @@
       .flame-active {
         animation: flame-wobble 1.5s ease-in-out infinite;
       }
+
+      /* Star float bob animation (matches moon rock) */
+      @keyframes star-float {
+        0%, 100% { transform: translateY(0px) scale(var(--star-scale, 1)); }
+        40%       { transform: translateY(-4px) scale(var(--star-scale, 1)); }
+        70%       { transform: translateY(-2px) scale(var(--star-scale, 1)); }
+      }
+      .star-floating {
+        animation: star-float var(--star-dur, 3s) ease-in-out infinite;
+        animation-delay: var(--star-delay, 0s);
+      }
+      .star-floating:hover .sky-star-svg {
+        filter: drop-shadow(0 0 8px rgba(253,224,71,0.7));
+      }
+      .star-floating:active {
+        transform: scale(0.9) !important;
+      }
+
+      /* ============================================ */
+      /* FINAL SECTION: One Last Thing                */
+      /* ============================================ */
+
+      /* Message fade-up reveal */
+      @keyframes gift-msg-rise {
+        from { opacity: 0; transform: translateY(22px); }
+        to   { opacity: 1; transform: translateY(0);   }
+      }
+      .gift-msg-rise {
+        animation: gift-msg-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      /* Floating emoji particles */
+      @keyframes gift-float-up {
+        0%   { opacity: 1; transform: translateY(0)      scale(1)   rotate(0deg);          }
+        80%  { opacity: 0.7; }
+        100% { opacity: 0; transform: translateY(-210px) scale(0.5) rotate(var(--rot,15deg)); }
+      }
+      .gift-float-el {
+        animation: gift-float-up var(--dur, 2.5s) ease-out forwards;
+      }
+
+      /* Moon glow pulse */
+      @keyframes moon-glow-pulse {
+        0%,100% { filter: drop-shadow(0 0 10px rgba(167,139,250,0.8)); }
+        50%      { filter: drop-shadow(0 0 28px rgba(167,139,250,1)) drop-shadow(0 0 50px rgba(167,139,250,0.4)); }
+      }
+      .moon-glow-active {
+        animation: moon-glow-pulse 2.5s ease-in-out infinite !important;
+        color: rgb(221,214,254) !important;
+      }
+
+      /* Noo button shake before escape */
+      @keyframes noo-btn-shake {
+        0%,100% { transform: translateX(0)   rotate(0deg);  }
+        20%      { transform: translateX(-6px) rotate(-4deg); }
+        40%      { transform: translateX(6px)  rotate(4deg);  }
+        60%      { transform: translateX(-4px) rotate(-2deg); }
+        80%      { transform: translateX(4px)  rotate(2deg);  }
+      }
+      .noo-btn-shaking {
+        animation: noo-btn-shake 0.32s ease-in-out !important;
+      }
+
+      /* Reduced-motion safety */
+      @media (prefers-reduced-motion: reduce) {
+        .gift-msg-rise,.gift-float-el,.moon-glow-active,.noo-btn-shaking {
+          animation: none !important;
+          transition: none !important;
+        }
+        .gift-msg-rise { opacity:1 !important; transform:none !important; }
+      }
     </style>
   </head>
   <body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased relative selection:bg-pink-100 selection:text-pink-600 overflow-x-hidden">
@@ -531,10 +602,10 @@
             <div class="absolute top-1/4 left-1/3 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
             <div class="absolute bottom-1/4 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <!-- Crescent Moon -->
-            <div class="absolute top-8 right-10 flex items-center gap-2 text-indigo-200/40 select-none pointer-events-none">
-              <i data-lucide="moon" class="w-7 h-7 fill-indigo-100/10"></i>
-            </div>
+            <!-- Crescent Moon - Clickable -->
+            <button id="moon-wish-btn" onclick="revealMoonWish()" title="A secret wish lives in the moon…" class="absolute top-8 right-10 cursor-pointer select-none z-10 text-indigo-200/50 hover:text-violet-300 transition-all duration-300 hover:scale-125 active:scale-90" style="background:none;border:none;padding:4px;">
+              <i id="moon-icon" data-lucide="moon" class="w-7 h-7 fill-indigo-100/10 transition-all duration-300"></i>
+            </button>
 
             <!-- Background Twinkling micro stars container -->
             <div id="sky-micro-stars-container" class="absolute inset-0 pointer-events-none"></div>
@@ -545,7 +616,7 @@
             <!-- Tap indicator -->
             <div id="sky-tap-indicator" class="absolute inset-x-0 bottom-6 text-center select-none pointer-events-none">
               <span class="font-mono text-[10px] text-indigo-300/60 uppercase tracking-widest animate-pulse">
-                ★ Tap any shining star ★
+                ★ Tap any star or the moon ★
               </span>
             </div>
 
@@ -567,6 +638,25 @@
               <div class="flex items-center justify-end text-[10px] text-pink-400 gap-1.5 mt-3 select-none">
                 <span>With Love</span>
                 <i data-lucide="heart" class="w-2.5 h-2.5 fill-pink-400"></i>
+              </div>
+            </div>
+
+            <!-- Moon Wish Popup -->
+            <div id="moon-wish-popup" class="hidden translate-y-10 opacity-0 transition-all duration-500 absolute inset-x-4 bottom-4 md:inset-x-8 md:bottom-8 p-6 bg-indigo-950/85 backdrop-blur-md border border-violet-400/20 rounded-2xl flex flex-col justify-between z-30">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-serif italic text-violet-300 text-xs tracking-widest uppercase flex items-center gap-1.5">
+                  <i data-lucide="moon" class="w-3.5 h-3.5 fill-violet-300/40"></i> Moon's Secret Wish
+                </span>
+                <button onclick="closeMoonPopup()" class="px-2.5 py-0.5 text-xs text-slate-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                  Close
+                </button>
+              </div>
+              <p id="moon-wish-text" class="font-sans text-sm sm:text-base text-violet-100 font-medium leading-relaxed italic pr-6 select-text">
+                "..."
+              </p>
+              <div class="flex items-center justify-end text-[10px] text-violet-400 gap-1.5 mt-3 select-none">
+                <span>From the Moon, With Love</span>
+                <i data-lucide="heart" class="w-2.5 h-2.5 fill-violet-400"></i>
               </div>
             </div>
           </div>
@@ -603,6 +693,118 @@
               <span>Made with love</span>
             </div>
           </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="flex justify-center text-purple-300/65 pointer-events-none select-none">
+          <i data-lucide="sparkles" class="w-5 h-5 animate-[spin_7s_linear_infinite]"></i>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- CHAPTER 7: One Last Thing (Interactive)     -->
+        <!-- ============================================ -->
+        <section id="final-gift-section" class="py-16 px-4 max-w-3xl mx-auto flex flex-col items-center justify-center text-center scroll-mt-24">
+
+          <!-- ── Phase 1: Question & Buttons ──────────────── -->
+          <div id="gift-question-phase" class="w-full flex flex-col items-center gap-10">
+
+            <!-- Heading -->
+            <div>
+              <span class="text-xs uppercase tracking-widest text-pink-400 font-semibold mb-2 block">Before You Go</span>
+              <h3 class="font-serif text-3xl sm:text-4xl text-slate-800 font-bold">✨ One Last Thing... ✨</h3>
+              <p class="font-sans text-base sm:text-lg text-slate-500 mt-4 max-w-md mx-auto leading-relaxed">
+                Did you like this little birthday gift I made for you? 🥹💖
+              </p>
+            </div>
+
+            <!-- Interactive Button Arena -->
+            <div id="gift-btn-area" class="relative w-full max-w-lg mx-auto select-none" style="height:180px;">
+
+              <!-- Yes Button — stays fixed -->
+              <button id="yes-gift-btn" onclick="handleYesClick()"
+                class="absolute flex justify-center items-center gap-2 w-40 sm:w-44 py-3.5 font-sans font-semibold text-white bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 rounded-full shadow-[0_8px_25px_rgba(244,114,182,0.4)] hover:shadow-[0_12px_35px_rgba(244,114,182,0.6)] cursor-pointer transition-shadow duration-300 shimmer-effect overflow-hidden"
+                style="left:8%;top:50%;transform:translateY(-50%);">
+                <span>💖</span><span class="text-sm sm:text-base">Yes, I loved it!</span>
+              </button>
+
+              <!-- Noo Button — escapes on hover -->
+              <button id="noo-gift-btn"
+                class="absolute flex justify-center items-center gap-2 w-40 sm:w-44 py-3.5 font-sans font-medium text-slate-500 bg-white/90 border border-slate-200/80 rounded-full shadow-sm cursor-pointer whitespace-nowrap hover:bg-pink-50 transition-colors duration-150"
+                style="right:8%;top:50%;transform:translateY(-50%);">
+                <span>🙈</span><span class="text-sm sm:text-base">Nooo</span>
+              </button>
+
+              <!-- Tooltip (positioned dynamically by JS) -->
+              <div id="noo-tooltip"
+                class="absolute hidden text-xs font-sans font-medium text-slate-600 bg-white border border-pink-200/60 shadow-lg rounded-full px-4 py-1.5 pointer-events-none z-50 opacity-0 transition-opacity duration-300 whitespace-nowrap">
+              </div>
+
+            </div>
+
+            <!-- Hint appears after 3+ hover attempts -->
+            <p id="noo-attempt-hint" class="hidden font-mono text-[10px] text-slate-300 uppercase tracking-widest animate-pulse">
+              catch it if you can... 😏
+            </p>
+
+          </div>
+
+
+          <!-- ── Phase 2: Celebration ────────────────────── -->
+          <div id="gift-celebration-phase" class="hidden w-full flex flex-col items-center gap-10 relative">
+
+            <!-- Fixed overlay for floating particles -->
+            <div id="gift-hearts-box" class="fixed inset-0 pointer-events-none overflow-hidden z-40"></div>
+
+            <!-- Sequential celebration messages -->
+            <div id="gift-msgs" class="relative z-10 flex flex-col items-center gap-8 w-full py-4">
+
+              <div id="gift-msg-1" class="hidden opacity-0 text-center">
+                <div class="text-5xl mb-4 animate-heartbeat">❤️</div>
+                <p class="font-serif text-2xl sm:text-3xl text-pink-600 font-bold italic">I knew you'd love it.</p>
+              </div>
+
+              <div id="gift-msg-2" class="hidden opacity-0 text-center max-w-md">
+                <p class="font-sans text-base sm:text-lg text-slate-600 leading-relaxed">
+                  Because every little detail on this page was made with you in mind.
+                </p>
+              </div>
+
+              <div id="gift-msg-3" class="hidden opacity-0 text-center max-w-md">
+                <p class="font-sans text-base sm:text-lg text-slate-600 leading-relaxed">
+                  You deserve smiles like this every single day.
+                </p>
+              </div>
+
+              <div id="gift-msg-4" class="hidden opacity-0 text-center">
+                <div class="flex justify-center mb-3">
+                  <i data-lucide="heart" class="w-8 h-8 fill-pink-500 text-pink-500 animate-heartbeat"></i>
+                </div>
+                <h3 class="font-serif text-3xl sm:text-4xl text-pink-600 font-bold">Mission accomplished.</h3>
+                <p class="font-sans text-sm sm:text-base text-slate-400 mt-3 tracking-wide">Your smile was the only reward I wanted.</p>
+              </div>
+
+            </div>
+
+            <!-- Moon phase: shooting star + wish messages -->
+            <div id="gift-moon-phase" class="hidden w-full flex flex-col items-center gap-6 relative" style="min-height:160px;overflow:hidden;">
+
+              <!-- Shooting star bar (JS-animated) — larger + glowing -->
+              <div id="gift-shooting-star"
+                class="absolute pointer-events-none opacity-0 rounded-full"
+                style="height:5px;width:300px;top:16px;left:-15%;background:linear-gradient(to right,transparent,rgba(253,224,71,0.7),rgba(255,255,255,1),rgba(253,224,71,0.7),transparent);box-shadow:0 0 8px 3px rgba(253,224,71,0.5),0 0 18px 6px rgba(255,255,200,0.3);">
+              </div>
+
+              <!-- Wish text sequence -->
+              <div class="flex flex-col items-center gap-6 pt-10 relative z-10">
+                <p id="wish-msg-1" class="hidden opacity-0 font-serif text-xl sm:text-2xl text-indigo-500 italic tracking-wide">✨ A shooting star just crossed the sky... make a wish!</p>
+                <p id="wish-msg-2" class="hidden opacity-0 font-serif text-xl sm:text-2xl text-indigo-500 italic tracking-wide">I already made mine...</p>
+                <p id="wish-msg-3" class="hidden opacity-0 font-serif text-2xl sm:text-3xl text-pink-600 font-bold italic">...it was you. 🌙❤️</p>
+              </div>
+
+            </div>
+
+          </div>
+
         </section>
 
       </main>
@@ -796,6 +998,9 @@
 
         // Build Sky Star Map
         buildStarSky();
+
+        // Init Final Gift Section (Noo button escape logic)
+        initFinalSection();
 
         // Setup Audio Node Source
         const audioNode = document.getElementById("bg-audio");
@@ -1416,10 +1621,14 @@
 
           const starBtn = document.createElement("button");
           starBtn.id = `star-btn-${w.id}`;
-          starBtn.className = "absolute p-1.5 rounded-full cursor-pointer transition-all duration-300 text-slate-400 hover:text-yellow-200 z-10 hover:scale-125";
+          // Match moon: hover scale-up, active press-down, smooth transition
+          starBtn.className = "absolute p-1.5 rounded-full cursor-pointer transition-colors duration-300 text-slate-400 hover:text-yellow-200 z-10 star-floating";
           starBtn.style.top = coord.top;
           starBtn.style.left = coord.left;
-          starBtn.style.transform = `scale(${scale})`;
+          // Pass scale & float timing via CSS custom properties
+          starBtn.style.setProperty("--star-scale", scale);
+          starBtn.style.setProperty("--star-dur", `${3 + (i % 3)}s`);
+          starBtn.style.setProperty("--star-delay", `${(i * 0.4).toFixed(1)}s`);
           starBtn.title = `Wish Star #${w.id}`;
           starBtn.onclick = () => revealWishStar(w.id);
 
@@ -1489,6 +1698,60 @@
           svgNode.style.filter = "";
         });
         appState.activeStarWishId = null;
+      }
+
+      function revealMoonWish() {
+        // Close any open star popup first
+        const starPopup = document.getElementById("star-wish-popup");
+        if (!starPopup.classList.contains("hidden")) {
+          starPopup.classList.add("translate-y-10", "opacity-0");
+          setTimeout(() => { starPopup.classList.add("hidden"); }, 300);
+          // Reset all stars
+          const btns = document.querySelectorAll("[id^='star-btn-']");
+          btns.forEach(btn => {
+            btn.classList.add("text-slate-400");
+            btn.classList.remove("text-yellow-300");
+            const svgNode = btn.querySelector(".sky-star-svg");
+            if (svgNode) {
+              svgNode.classList.remove("fill-yellow-300");
+              svgNode.classList.add("fill-slate-800/30");
+              svgNode.style.filter = "";
+            }
+          });
+        }
+
+        // Glow the moon
+        const moonIcon = document.getElementById("moon-icon");
+        moonIcon.style.filter = "drop-shadow(0 0 14px rgba(167,139,250,0.95))";
+        moonIcon.classList.remove("fill-indigo-100/10");
+        moonIcon.classList.add("fill-violet-200/30");
+        const moonBtn = document.getElementById("moon-wish-btn");
+        moonBtn.classList.remove("text-indigo-200/50");
+        moonBtn.classList.add("text-violet-300");
+
+        // Populate wish text
+        const wishText = (config.moonWish) || "The moon shines brightest just for you. 🌙";
+        document.getElementById("moon-wish-text").innerText = `"${wishText}"`;
+
+        // Hide sky hint
+        document.getElementById("sky-tap-indicator").classList.add("hidden");
+
+        // Slide up popup
+        const popup = document.getElementById("moon-wish-popup");
+        popup.classList.remove("hidden");
+        popup.offsetHeight;
+        popup.classList.remove("translate-y-10", "opacity-0");
+
+        lucide.createIcons();
+      }
+
+      function closeMoonPopup() {
+        const popup = document.getElementById("moon-wish-popup");
+        popup.classList.add("translate-y-10", "opacity-0");
+        setTimeout(() => {
+          popup.classList.add("hidden");
+          document.getElementById("sky-tap-indicator").classList.remove("hidden");
+        }, 500);
       }
 
       // ============================================
@@ -1575,6 +1838,331 @@
 
         // Re-compile lucide for updated selectors
         lucide.createIcons();
+      }
+
+      // ============================================
+      // CHAPTER 7: "One Last Thing" — Final Section
+      // ============================================
+
+      let nooEscapeCount   = 0;
+      let nooTooltipTimer  = null;
+      let nooEscapeCooldown = false;  // prevents rapid-fire escapes
+      const NOO_TOOLTIPS  = [
+        "Nice try 😂",
+        "I don't believe you 😜",
+        "Not so fast! 😏",
+        "Still trying? 😂",
+        "You can't catch me 🙈",
+        "Nope! 😜"
+      ];
+
+      function initFinalSection() {
+        const nooBtn = document.getElementById("noo-gift-btn");
+        const yesBtn = document.getElementById("yes-gift-btn");
+        const area   = document.getElementById("gift-btn-area");
+        if (!nooBtn || !area) return;
+
+        // Position buttons after browser renders them
+        requestAnimationFrame(() => {
+          const areaW = area.offsetWidth;
+          const areaH = 180; // matches fixed height in HTML
+
+          // Yes button: 8% from left, vertically centred
+          if (yesBtn) {
+            yesBtn.style.left      = `${Math.max(10, areaW * 0.08)}px`;
+            yesBtn.style.top       = `${(areaH - (yesBtn.offsetHeight || 48)) / 2}px`;
+            yesBtn.style.transform = "none";
+          }
+
+          // Noo button: right side, vertically centred
+          const nooW = nooBtn.offsetWidth  || 110;
+          const nooH = nooBtn.offsetHeight || 48;
+          nooBtn.style.left      = `${Math.min(areaW - nooW - 12, areaW * 0.62)}px`;
+          nooBtn.style.top       = `${(areaH - nooH) / 2}px`;
+          nooBtn.style.transform = "none";
+          // Smooth springy escape transition
+          nooBtn.style.transition = "left 0.38s cubic-bezier(0.34,1.56,0.64,1),top 0.38s cubic-bezier(0.34,1.56,0.64,1),transform 0.38s ease";
+
+          // PROXIMITY detection: escape when cursor approaches within ~90px
+          // (fires on mousemove over the whole arena, not just mouseenter on btn)
+          area.addEventListener("mousemove", handleAreaMouseMove);
+          // Touch support
+          nooBtn.addEventListener("touchstart", handleNooHover, { passive: true });
+        });
+      }
+
+      // Called on every mousemove inside the button arena
+      function handleAreaMouseMove(e) {
+        if (nooEscapeCooldown) return;
+        const nooBtn = document.getElementById("noo-gift-btn");
+        const area   = document.getElementById("gift-btn-area");
+        if (!nooBtn || !area) return;
+
+        const rect     = area.getBoundingClientRect();
+        const mouseX   = e.clientX - rect.left;
+        const mouseY   = e.clientY - rect.top;
+
+        const btnLeft    = parseFloat(nooBtn.style.left) || 0;
+        const btnTop     = parseFloat(nooBtn.style.top)  || 0;
+        const btnCenterX = btnLeft + (nooBtn.offsetWidth  || 110) / 2;
+        const btnCenterY = btnTop  + (nooBtn.offsetHeight || 48)  / 2;
+
+        const dist = Math.hypot(mouseX - btnCenterX, mouseY - btnCenterY);
+
+        if (dist < 90) {
+          nooEscapeCooldown = true;
+          handleNooHover();
+          // Cooldown: prevent re-triggering for 700ms while button animates away
+          setTimeout(() => { nooEscapeCooldown = false; }, 700);
+        }
+      }
+
+      function handleNooHover() {
+        nooEscapeCount++;
+        const nooBtn = document.getElementById("noo-gift-btn");
+        if (!nooBtn) return;
+
+        // Shake first, then escape
+        nooBtn.style.transition = "none";
+        nooBtn.classList.add("noo-btn-shaking");
+
+        setTimeout(() => {
+          nooBtn.classList.remove("noo-btn-shaking");
+          nooBtn.style.transition = "left 0.38s cubic-bezier(0.34,1.56,0.64,1),top 0.38s cubic-bezier(0.34,1.56,0.64,1),transform 0.38s ease";
+          escapeNooBtn();
+        }, 200);
+
+        // Tooltip after 6+ attempts (every even attempt)
+        if (nooEscapeCount >= 6 && nooEscapeCount % 2 === 0) showNooTooltip();
+
+        // Subtle hint after 3rd try
+        if (nooEscapeCount === 3) {
+          const hint = document.getElementById("noo-attempt-hint");
+          if (hint) hint.classList.remove("hidden");
+        }
+      }
+
+      function escapeNooBtn() {
+        const nooBtn = document.getElementById("noo-gift-btn");
+        const yesBtn = document.getElementById("yes-gift-btn");
+        const area   = document.getElementById("gift-btn-area");
+        if (!nooBtn || !area) return;
+
+        const areaW = area.offsetWidth;
+        const areaH = area.offsetHeight || 180;
+        const nooW  = nooBtn.offsetWidth  || 110;
+        const nooH  = nooBtn.offsetHeight || 48;
+
+        // Yes button exclusion zone (left side + padding)
+        const yesL = parseFloat(yesBtn?.style.left || "10") - 12;
+        const yesR = yesL + (yesBtn?.offsetWidth   || 180) + 20;
+
+        let newLeft, newTop, attempt = 0;
+        do {
+          newLeft = 4 + Math.random() * Math.max(8, areaW - nooW - 8);
+          newTop  = 4 + Math.random() * Math.max(8, areaH - nooH - 8);
+          // Re-roll if landing on top of the Yes button (up to 8 tries)
+          const overlapsYes = newLeft < yesR && (newLeft + nooW) > yesL;
+          if (!overlapsYes || attempt >= 7) break;
+          attempt++;
+        } while (true);
+
+        const rot = (Math.random() * 28 - 14).toFixed(1);
+        nooBtn.style.left      = `${newLeft}px`;
+        nooBtn.style.top       = `${newTop}px`;
+        nooBtn.style.transform = `rotate(${rot}deg)`;
+      }
+
+      function showNooTooltip() {
+        const tooltip = document.getElementById("noo-tooltip");
+        const nooBtn  = document.getElementById("noo-gift-btn");
+        if (!tooltip || !nooBtn) return;
+
+        tooltip.innerText = NOO_TOOLTIPS[Math.floor(Math.random() * NOO_TOOLTIPS.length)];
+
+        // Position tooltip above current noo btn
+        const btnLeft = parseFloat(nooBtn.style.left) || 0;
+        const btnTop  = parseFloat(nooBtn.style.top)  || 0;
+        const btnW    = nooBtn.offsetWidth || 110;
+        tooltip.style.left  = `${Math.max(0, btnLeft + btnW / 2 - 60)}px`;
+        tooltip.style.top   = `${Math.max(0, btnTop - 44)}px`;
+
+        tooltip.classList.remove("hidden");
+        tooltip.offsetHeight; // reflow
+        tooltip.style.opacity = "1";
+
+        clearTimeout(nooTooltipTimer);
+        nooTooltipTimer = setTimeout(() => {
+          tooltip.style.opacity = "0";
+          setTimeout(() => tooltip.classList.add("hidden"), 320);
+        }, 2200);
+      }
+
+      // ── Yes Button ──────────────────────────────
+
+      function handleYesClick() {
+        const qPhase = document.getElementById("gift-question-phase");
+        if (!qPhase) return;
+
+        // Fade out question
+        qPhase.style.transition = "opacity 0.7s ease, transform 0.7s ease";
+        qPhase.style.opacity    = "0";
+        qPhase.style.transform  = "translateY(-18px)";
+
+        setTimeout(() => {
+          qPhase.classList.add("hidden");
+
+          launchGiftConfetti();
+
+          const cPhase = document.getElementById("gift-celebration-phase");
+          if (!cPhase) return;
+          cPhase.classList.remove("hidden");
+          cPhase.style.opacity    = "0";
+          cPhase.style.transition = "opacity 0.5s ease";
+          cPhase.offsetHeight;
+          cPhase.style.opacity    = "1";
+
+          spawnGiftParticles();
+          revealGiftMessages();
+        }, 700);
+      }
+
+      function launchGiftConfetti() {
+        if (typeof confetti === "undefined") return;
+        confetti({
+          particleCount: 80, spread: 90, origin: { x: 0.5, y: 0.65 },
+          colors: ["#fbcfe8","#f472b6","#e9d5ff","#c084fc","#fffbeb","#fde68a"],
+          scalar: 0.85, gravity: 0.7
+        });
+        setTimeout(() => {
+          confetti({ particleCount:45, spread:120, origin:{x:0.2,y:0.7}, colors:["#fbcfe8","#f472b6","#e9d5ff"], scalar:0.75 });
+          confetti({ particleCount:45, spread:120, origin:{x:0.8,y:0.7}, colors:["#c084fc","#fffbeb","#fde68a"], scalar:0.75 });
+        }, 450);
+      }
+
+      function spawnGiftParticles() {
+        const container = document.getElementById("gift-hearts-box");
+        if (!container) return;
+        const emojis = ["❤️","💖","💕","✨","🌸","💫","🌷","⭐","🥹"];
+        for (let i = 0; i < 16; i++) {
+          setTimeout(() => {
+            const el  = document.createElement("div");
+            const dur = (2.2 + Math.random() * 2).toFixed(1);
+            const rot = (Math.random() * 40 - 20).toFixed(0);
+            el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.cssText = [
+              "position:fixed",
+              "bottom:10%",
+              `left:${5 + Math.random() * 90}%`,
+              `font-size:${(16 + Math.random() * 14).toFixed(0)}px`,
+              "pointer-events:none",
+              "user-select:none",
+              "z-index:9999",
+              `--dur:${dur}s`,
+              `--rot:${rot}deg`,
+              `animation:gift-float-up ${dur}s ease-out forwards`
+            ].join(";");
+            container.appendChild(el);
+            setTimeout(() => el.remove(), parseFloat(dur) * 1000 + 300);
+          }, i * 175);
+        }
+      }
+
+      function revealGiftMessages() {
+        const show = (id, ms, cb) => {
+          setTimeout(() => {
+            const el = document.getElementById(id);
+            if (!el) { if (cb) cb(); return; }
+            el.classList.remove("hidden");
+            el.offsetHeight;
+            el.classList.add("gift-msg-rise");
+            el.style.opacity = "1";
+            if (cb) cb();
+          }, ms);
+        };
+
+        show("gift-msg-1", 350);
+        show("gift-msg-2", 2800);
+        show("gift-msg-3", 5300);
+        show("gift-msg-4", 7800, () => {
+          lucide.createIcons();
+          setTimeout(startGiftMoonPhase, 3000);
+        });
+      }
+
+      function startGiftMoonPhase() {
+        // Glow the existing moon icon in the sky canvas
+        const moonIcon = document.getElementById("moon-icon");
+        const moonBtn  = document.getElementById("moon-wish-btn");
+        if (moonIcon) {
+          moonIcon.style.transition = "filter 2.5s ease";
+          moonIcon.classList.remove("fill-indigo-100/10","fill-violet-200/30");
+          moonIcon.classList.add("fill-violet-300/70");
+        }
+        if (moonBtn) moonBtn.classList.add("moon-glow-active");
+
+        // Show moon phase container
+        const moonPhase = document.getElementById("gift-moon-phase");
+        if (moonPhase) {
+          moonPhase.classList.remove("hidden");
+          moonPhase.style.opacity    = "0";
+          moonPhase.style.transition = "opacity 0.9s ease";
+          moonPhase.offsetHeight;
+          moonPhase.style.opacity    = "1";
+        }
+
+        // Fire shooting star after 1.5s
+        setTimeout(() => {
+          fireGiftShootingStar();
+          setTimeout(showGiftWishMessages, 2000);
+        }, 1500);
+      }
+
+      function fireGiftShootingStar() {
+        const star = document.getElementById("gift-shooting-star");
+        if (!star) return;
+        star.style.transition = "none";
+        star.style.left       = "-15%";
+        star.style.top        = "16px";
+        star.style.opacity    = "0";
+        star.offsetHeight;
+        star.style.transition = "left 1.9s cubic-bezier(0.25,0.46,0.45,0.94),top 1.9s cubic-bezier(0.25,0.46,0.45,0.94),opacity 0.25s ease";
+        star.style.opacity    = "1";
+        star.style.left       = "115%";
+        star.style.top        = "72px";
+        setTimeout(() => { star.style.opacity = "0"; }, 1600);
+      }
+
+      function showGiftWishMessages() {
+        const fadeIn = (id, ms) => {
+          setTimeout(() => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove("hidden");
+            el.offsetHeight;
+            el.classList.add("gift-msg-rise");
+            el.style.opacity = "1";
+          }, ms);
+        };
+        const fadeOut = (id, ms, cb) => {
+          setTimeout(() => {
+            const el = document.getElementById(id);
+            if (el) { el.style.transition = "opacity 0.8s ease"; el.style.opacity = "0"; }
+            if (cb) setTimeout(cb, 880);
+          }, ms);
+        };
+
+        // "✨ Make a wish..." → 3s → fade
+        fadeIn("wish-msg-1", 0);
+        fadeOut("wish-msg-1", 3200, () => {
+          // "I already made mine..." → 3s → fade
+          fadeIn("wish-msg-2", 0);
+          fadeOut("wish-msg-2", 3200, () => {
+            // "...it was you. 🌙❤️" — stays
+            fadeIn("wish-msg-3", 0);
+            setTimeout(spawnGiftParticles, 700);
+          });
+        });
       }
     </script>
   </body>
